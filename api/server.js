@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const serverless = require('serverless-http');
+const serverless = require('serverless-http'); // 🛠️ Ab use karenge
 
 const app = express();
 
@@ -108,13 +108,14 @@ router.post('/invoices', async (req, res) => {
   }
 });
 
-// Use router under /api
-app.use('/api', router);
+// Use router directly at root (No '/api' prefix here)
+app.use('/', router);
 
-// 🟰 Export app correctly
-module.exports = app; // ✅ For Vercel
+// 🟰 Correct Export for Vercel
+module.exports = app;
+module.exports.handler = serverless(app); // ✅ Serverless HTTP handler for Vercel
 
-// 🛠 For local development (localhost)
+// 🛠 Local development support
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
