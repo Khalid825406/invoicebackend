@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const serverless = require('serverless-http'); // ✅ Import serverless-http
 
 const app = express();
 
@@ -10,7 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Database connection
-mongoose.connect('mongodb://localhost:27017/invoiceCRM', {
+mongoose.connect('mongodb+srv://ka1239996:mkBgVAmklkZznScY@cluster0.lqlmpqe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
@@ -71,18 +72,18 @@ app.post('/api/companies', async (req, res) => {
 });
 
 app.get('/api/companies/:id', async (req, res) => {
-    try {
-      const company = await Company.findById(req.params.id); // Mongoose ya jo bhi ORM use kar rahe ho
-      if (!company) {
-        return res.status(404).json({ message: 'Company not found' });
-      }
-      res.json(company);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Server Error' });
+  try {
+    const company = await Company.findById(req.params.id);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
     }
-  });
-  
+    res.json(company);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 // Get invoices for a company
 app.get('/api/companies/:id/invoices', async (req, res) => {
   try {
@@ -113,8 +114,5 @@ app.post('/api/invoices', async (req, res) => {
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// ✅ Instead of app.listen
+module.exports.handler = serverless(app);
