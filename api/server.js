@@ -1,8 +1,9 @@
+require('dotenv').config(); // 🟰 Sabse upar .env load karo
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const serverless = require('serverless-http'); // ✅ Import serverless-http
+const serverless = require('serverless-http');
 
 const app = express();
 
@@ -11,20 +12,16 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Database connection
-mongoose.connect('mongodb+srv://ka1239996:mkBgVAmklkZznScY@cluster0.lqlmpqe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+mongoose.connect(process.env.MONGO_DB, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
-});
-
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', () => {
-  console.log('Connected to MongoDB');
-});
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Models
 const CompanySchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true }
+  name: { type: String, required: true, unique: true },
 });
 
 const InvoiceSchema = new mongoose.Schema({
@@ -35,20 +32,22 @@ const InvoiceSchema = new mongoose.Schema({
   voucher_ar: { type: Number, default: 0 },
   total: { type: Number, default: 0 },
   balance: { type: Number, default: 0 },
-  date: { type: Date, default: Date.now }
+  date: { type: Date, default: Date.now },
 });
 
 const Company = mongoose.model('Company', CompanySchema);
 const Invoice = mongoose.model('Invoice', InvoiceSchema);
 
 // Routes
+const router = express.Router();
 
-app.get('/', (req, res) => {
-  res.send('Server is running');
+// Health Check
+router.get('/', (req, res) => {
+  res.send('🚀 Server is running!');
 });
 
 // Get all companies
-app.get('/api/companies', async (req, res) => {
+router.get('/companies', async (req, res) => {
   try {
     const companies = await Company.find();
     res.json(companies);
@@ -57,12 +56,9 @@ app.get('/api/companies', async (req, res) => {
   }
 });
 
-// Create a company
-app.post('/api/companies', async (req, res) => {
-  const company = new Company({
-    name: req.body.name
-  });
-
+// Create a new company
+router.post('/companies', async (req, res) => {
+  const company = new Company({ name: req.body.name });
   try {
     const newCompany = await company.save();
     res.status(201).json(newCompany);
@@ -71,21 +67,22 @@ app.post('/api/companies', async (req, res) => {
   }
 });
 
-app.get('/api/companies/:id', async (req, res) => {
+// Get single company by ID
+router.get('/companies/:id', async (req, res) => {
   try {
     const company = await Company.findById(req.params.id);
     if (!company) {
       return res.status(404).json({ message: 'Company not found' });
     }
     res.json(company);
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server Error' });
   }
 });
 
 // Get invoices for a company
-app.get('/api/companies/:id/invoices', async (req, res) => {
+router.get('/companies/:id/invoices', async (req, res) => {
   try {
     const invoices = await Invoice.find({ company: req.params.id });
     res.json(invoices);
@@ -94,8 +91,8 @@ app.get('/api/companies/:id/invoices', async (req, res) => {
   }
 });
 
-// Create an invoice
-app.post('/api/invoices', async (req, res) => {
+// Create a new invoice
+router.post('/invoices', async (req, res) => {
   const invoice = new Invoice({
     company: req.body.companyId,
     invoiceNumber: req.body.invoiceNumber,
@@ -103,7 +100,7 @@ app.post('/api/invoices', async (req, res) => {
     voucher_nt: req.body.voucher_nt,
     voucher_ar: req.body.voucher_ar,
     total: req.body.total,
-    balance: req.body.total
+    balance: req.body.total,
   });
 
   try {
@@ -114,5 +111,16 @@ app.post('/api/invoices', async (req, res) => {
   }
 });
 
-// ✅ Instead of app.listen
+// Use router under /api
+app.use('/api', router);
+
+// Export handler for Vercel
 module.exports.handler = serverless(app);
+
+// OPTIONAL: For local development, listen on PORT
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running locally on http://localhost:${PORT}`);
+  });
+}
