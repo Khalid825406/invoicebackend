@@ -12,12 +12,9 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Database connection
-mongoose.connect(process.env.MONGO_DB, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ Connected to MongoDB'))
-.catch((err) => console.error('❌ MongoDB connection error:', err));
+mongoose.connect(process.env.MONGO_DB)
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Models
 const CompanySchema = new mongoose.Schema({
@@ -114,10 +111,10 @@ router.post('/invoices', async (req, res) => {
 // Use router under /api
 app.use('/api', router);
 
-// Export handler for Vercel
-module.exports.handler = serverless(app);
+// 🟰 Export app correctly
+module.exports = app; // ✅ For Vercel
 
-// OPTIONAL: For local development, listen on PORT
+// 🛠 For local development (localhost)
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
