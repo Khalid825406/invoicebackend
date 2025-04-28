@@ -42,6 +42,10 @@ const Invoice = mongoose.model('Invoice', InvoiceSchema);
 
 // Routes
 
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
+
 // Get all companies
 app.get('/api/companies', async (req, res) => {
   try {
